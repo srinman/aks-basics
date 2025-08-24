@@ -6,43 +6,23 @@ Welcome to the comprehensive collection of Kubernetes learning guides specifical
 
 ### 🔰 Fundamentals
 
-#### [Pods - Basic Concepts](./pods.md)
+#### [Pods - Fundamentals](./pods.md)
 **Level**: Beginner | **Duration**: 30-45 minutes  
-Introduction to Kubernetes Pods, the smallest deployable units in Kubernetes. Learn how to create, manage, and inspect pods using practical examples.
+Introduction to Kubernetes Pods, the smallest deployable units in Kubernetes. Learn how to create, manage, and inspect pods using practical examples with debugging containers.
 
 **Topics Covered:**
 - Pod creation and basic operations
-- Container inspection and debugging
+- Container inspection and debugging with netshoot
 - Process and network exploration
 - Multi-container pod examples
 - Pod lifecycle management
+- Basic troubleshooting techniques
 
 **Key Learning Outcomes:**
 - Understand what pods are and why they exist
 - Learn basic pod management commands
 - Explore pod networking and process isolation
-- Practice debugging techniques
-
----
-
-#### [Pods - Deep Dive & Internals](./pods_deepdive.md)
-**Level**: Advanced | **Duration**: 2-3 hours  
-Comprehensive deep dive into pod architecture, Linux namespaces, container runtime internals, and the complete pod creation process from API server to running processes.
-
-**Topics Covered:**
-- Linux namespaces and cgroups
-- Pod sandbox architecture with pause containers
-- Container runtime internals (containerd, runc)
-- Process tree analysis with crictl
-- Complete API server → kubelet → CRI → OCI → Linux syscalls flow
-- Network namespace sharing vs process isolation
-
-**Key Learning Outcomes:**
-- Master Linux namespace concepts underlying pods
-- Understand how containers share resources while maintaining isolation
-- Learn to use crictl for low-level container inspection
-- Trace pod creation from Kubernetes API to Linux processes
-- Debug container runtime issues
+- Practice debugging techniques with netshoot containers
 
 ---
 
@@ -114,35 +94,33 @@ Comprehensive tutorial on Kubernetes Deployments and ReplicaSets, covering rolli
 ### 🔧 Configuration & Secrets
 
 #### [ConfigMaps & Secrets](./cmsecret.md)
-**Level**: Beginner-Intermediate | **Status**: 🚧 Coming Soon  
-Learn to manage application configuration and sensitive data using ConfigMaps and Secrets.
+**Level**: Beginner-Intermediate | **Status**: � Empty - Available for Development  
+Configuration and secret management guide placeholder.
 
-**Planned Topics:**
+**Future Topics:**
 - ConfigMap creation and usage patterns
 - Secret management and security best practices
 - Environment variable injection
 - Volume mounting for configuration
-- Configuration hot-reloading
 
 ---
 
 #### [Services & Networking](./services.md)
-**Level**: Intermediate | **Status**: 🚧 Coming Soon  
-Deep dive into Kubernetes Services, load balancing, and networking concepts.
+**Level**: Intermediate | **Status**: � Empty - Available for Development  
+Service and networking concepts guide placeholder.
 
-**Planned Topics:**
+**Future Topics:**
 - Service types (ClusterIP, NodePort, LoadBalancer)
 - Service discovery and DNS
 - Ingress controllers and traffic routing
 - Network policies and security
-- AKS-specific networking features
 
 ---
 
 ## 🎯 Learning Path Recommendations
 
 ### **Beginner Path** (New to Kubernetes)
-1. [Pods - Basic Concepts](./pods.md) - Start here to understand the fundamental building blocks
+1. [Pods - Fundamentals](./pods.md) - Start here to understand the fundamental building blocks
 2. [Namespaces](./namespace.md) - Learn resource organization and isolation
 3. [Deployments & ReplicaSets](./deploymentdemo.md) - Master workload management
 4. [Nodes](./nodes.md) - Understand cluster infrastructure
@@ -151,13 +129,7 @@ Deep dive into Kubernetes Services, load balancing, and networking concepts.
 1. [Namespaces](./namespace.md) - Advanced multi-tenancy and resource management
 2. [Deployments & ReplicaSets](./deploymentdemo.md) - Production deployment strategies
 3. [Nodes](./nodes.md) - Infrastructure optimization
-4. [Pods - Deep Dive](./pods_deepdive.md) - Internal architecture understanding
-
-### **Advanced Path** (Deep Technical Understanding)
-1. [Pods - Deep Dive](./pods_deepdive.md) - Master container runtime internals
-2. [Namespaces](./namespace.md) - Implement enterprise-grade multi-tenancy
-3. [Nodes](./nodes.md) - Advanced cluster management
-4. [Services & Networking](./services.md) - Network architecture (when available)
+4. [Pods - Fundamentals](./pods.md) - Reinforce core concepts with advanced debugging
 
 ## 🛠 Prerequisites
 
@@ -167,7 +139,6 @@ Deep dive into Kubernetes Services, load balancing, and networking concepts.
 - **Access to AKS cluster** - Running Kubernetes cluster
 
 ### Optional Tools (for advanced tutorials)
-- **crictl** - Container runtime interface tool (for deep dive tutorials)
 - **docker/podman** - Container management (helpful for understanding)
 - **jq** - JSON processor for parsing kubectl output
 
