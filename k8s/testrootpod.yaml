@@ -2,8 +2,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    run: nsenter-test2
-  name: nsenter-test2
+    run: nsenter-test3
+  name: nsenter-test3
   namespace: default
 spec:
   containers:
@@ -21,8 +21,6 @@ spec:
     image: docker.io/library/alpine
     imagePullPolicy: Always
     name: nsenter
-    securityContext:
-      privileged: true
     stdin: true
     stdinOnce: true
     terminationMessagePath: /dev/termination-log
