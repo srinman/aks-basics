@@ -99,7 +99,7 @@ kubectl explain deployment.spec
 kubectl get pods -o wide
 kubectl get pods -o yaml
 kubectl get pods -o json
-kubectl get pods -o jsonpath='{.items[*].metadata.name}'
+kubectl get pods -A -o jsonpath='{.items[*].metadata.name}'
 ```
 
 #### Understanding API Resources and Versions
@@ -137,6 +137,7 @@ kubectl api-resources | grep nodes
 # Shows nodes are cluster-wide, not namespaced
 
 # Find all resources in a specific API group
+kubectl api-resources 
 kubectl api-resources --api-group=apps
 kubectl api-resources --api-group=networking.k8s.io
 ```
