@@ -81,16 +81,4 @@ kubectl exec -it demo-pod -- hostname
 kubectl exec -it demo-pod -- env
 ```
 
-```bash
-cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: Pod
-metadata:
-  name: debug-pod
-spec:
-  containers:
-  - name: netshoot
-    image: nicolaka/netshoot
-    command: ['sleep', '3600']
-EOF
-```
+

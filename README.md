@@ -12,13 +12,6 @@ This repository is organized into focused learning modules, each containing deta
 
 Learn how to create, configure, and manage AKS clusters in Azure. This section covers Azure-specific features, integrations, and best practices for running Kubernetes workloads in the cloud.
 
-**What you'll find:**
-- AKS cluster creation and configuration
-- Azure integrations (Azure AD, Azure Monitor, etc.)
-- Networking with Azure CNI and kubenet
-- Security and access management
-- Scaling and performance optimization
-- Cost management strategies
 
 ---
 
@@ -28,14 +21,6 @@ Learn how to create, configure, and manage AKS clusters in Azure. This section c
 
 Master the fundamental concepts of Kubernetes through practical examples and hands-on exercises. This section covers essential kubectl operations, resource management, and troubleshooting techniques.
 
-**What you'll find:**
-- Pod lifecycle and management
-- Services and networking
-- Deployments and scaling
-- ConfigMaps and Secrets
-- Namespaces and resource organization
-- kubectl mastery and troubleshooting
-- Architecture deep-dives
 
 ---
 
@@ -51,10 +36,6 @@ Master the fundamental concepts of Kubernetes through practical examples and han
 2. Supplement with **[Kubernetes Fundamentals](./k8s/README.md)** for deeper technical knowledge
 3. Focus on production-ready patterns and best practices
 
-### For Kubernetes Practitioners:
-1. Review **[kubectl advanced techniques](./k8s/kubectl.md)** for operational efficiency
-2. Explore **[AKS-specific features](./aks/README.md)** for Azure optimizations
-3. Practice troubleshooting scenarios across both sections
 
 ---
 
@@ -71,24 +52,6 @@ Master the fundamental concepts of Kubernetes through practical examples and han
   - Basic containerization concepts
   - Fundamental networking understanding
 
----
-
-## 📋 Quick Start
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/srinman/aks-basics.git
-   cd aks-basics
-   ```
-
-2. **Choose your learning path**:
-   - **New to Kubernetes**: Start with [k8s/README.md](./k8s/README.md)
-   - **Azure-focused**: Begin with [aks/README.md](./aks/README.md)
-
-3. **Set up your environment**:
-   - Install required tools (Azure CLI, kubectl)
-   - Configure Azure authentication (`az login`)
-   - Verify access to Azure subscription
 
 ---
 
@@ -123,16 +86,6 @@ Master the fundamental concepts of Kubernetes through practical examples and han
 - [Azure Community](https://techcommunity.microsoft.com/t5/azure/ct-p/Azure)
 - [CNCF Landscape](https://landscape.cncf.io/)
 
----
-
-## 🎯 Repository Goals
-
-This repository aims to provide:
-- **Practical Knowledge**: Real-world applicable skills
-- **Clear Documentation**: Step-by-step guidance with explanations
-- **Hands-On Experience**: Interactive learning through examples
-- **Azure Integration**: Specific focus on Azure Kubernetes Service
-- **Progressive Learning**: Structured path from beginner to advanced concepts
 
 ---
 

@@ -1,4 +1,9 @@
-# Azure Kubernetes Service (AKS) Learning Guides
+# Az## 📚 Available Guides
+
+| Guide | Level | Duration | Description |
+|-------|-------|----------|-------------|
+| **[Creating Your First AKS Cluster](./createaks.md)** | Beginner | 45-60 min | Complete AKS cluster creation with architecture deep dive |
+| **[AKS Advanced Architecture](./aks-advanced.md)** | Advanced | 30-45 min | OSS Kubernetes to AKS component mapping and validation |ubernetes Service (AKS) Learning Guides
 
 Welcome to the Azure Kubernetes Service (AKS) learning section for Azure-specific Kubernetes deployment and management.
 
