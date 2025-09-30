@@ -374,6 +374,30 @@ kubectl describe service <service-name>
 kubectl get pods -w
 ```
 
+
+
+## Advanced 
+
+Change nodename and apply sshrootpod.yaml
+
+```bash 
+k apply -f sshrootpod.yaml 
+
+k exec nsenter-test -it -- bash  
+iptables -t nat -S | grep -E "KUBE-"
+
+iptables -t nat -S | grep 10.0.0.1
+
+iptables -t nat -S KUBE-SVC-xxxxxx
+
+iptables -t nat -S KUBE-SEP-xxxxxx  
+``` 
+outside of the shell, check IP for API server address -> nslookup democluste-democlusterrg-3eef5d-nqvdp4bm.hcp.eastus2.azmk8s.io   
+
+DNAT IP should match nslookup IP    
+
+similarly, check iptables chain for other K8S services.  Check after completing 'Exercise 1' (for creating service)     
+
 ## 🎯 Key Takeaways
 
 1. **Services provide stable networking** for ephemeral pods

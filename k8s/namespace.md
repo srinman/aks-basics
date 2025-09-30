@@ -170,20 +170,6 @@ kubectl get pods  # Shows pods in demo-app namespace
 kubectl config set-context --current --namespace=default
 ```
 
-#### Create and Switch Contexts
-```bash
-# Create a new context for demo-app namespace
-kubectl config set-context demo-context --cluster=$(kubectl config current-context) --user=$(kubectl config view -o jsonpath='{.contexts[0].context.user}') --namespace=demo-app
-
-# Switch to the new context
-kubectl config use-context demo-context
-
-# List available contexts
-kubectl config get-contexts
-
-# Switch back to original context
-kubectl config use-context $(kubectl config current-context | head -1)
-```
 
 ### 4. Resource Quotas and Limits
 
@@ -193,6 +179,7 @@ kubectl config use-context $(kubectl config current-context | head -1)
 kubectl create namespace quota-demo
 
 # Apply resource quota
+# Here you can realize how a cluster is divided and allocated to a namespace  (virtual cluster concept)
 cat <<EOF | kubectl apply -f -
 apiVersion: v1
 kind: ResourceQuota
@@ -250,6 +237,88 @@ spec:
 EOF
 
 # Check quota usage
+kubectl describe resourcequota compute-quota -n quota-demo
+
+# Try to exceed quota limits to see how it works
+# This deployment will fail due to CPU quota exceeded (requests 3 CPUs but quota allows only 2)
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: quota-breaker
+  namespace: quota-demo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: quota-breaker
+  template:
+    metadata:
+      labels:
+        app: quota-breaker
+    spec:
+      containers:
+      - name: resource-hog
+        image: nginx:latest
+        resources:
+          requests:
+            cpu: 1500m    # 1.5 CPU per pod, 2 pods = 3 CPU total (exceeds 2 CPU quota)
+            memory: 1Gi   # 1 GB per pod, 2 pods = 2 GB total (within 4 GB quota)
+          limits:
+            cpu: 2000m    # 2 CPU per pod, 2 pods = 4 CPU total (matches 4 CPU limit quota)
+            memory: 2Gi   # 2 GB per pod, 2 pods = 4 GB total (within 8 GB limit quota)
+        ports:
+        - containerPort: 80
+EOF
+
+# Check the deployment status - it should show issues with replica creation
+kubectl get deployment quota-breaker -n quota-demo
+kubectl describe deployment quota-breaker -n quota-demo
+
+# Check replica set status to see quota enforcement
+kubectl get replicaset -n quota-demo
+kubectl describe replicaset -l app=quota-breaker -n quota-demo
+
+# View current quota usage after attempting to exceed limits
+kubectl describe resourcequota compute-quota -n quota-demo
+
+# Try a deployment that exceeds pod count limit (quota allows max 10 pods)
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pod-count-breaker
+  namespace: quota-demo
+spec:
+  replicas: 15  # Exceeds 10 pod limit
+  selector:
+    matchLabels:
+      app: pod-count-breaker
+  template:
+    metadata:
+      labels:
+        app: pod-count-breaker
+    spec:
+      containers:
+      - name: small-pod
+        image: nginx:latest
+        resources:
+          requests:
+            cpu: 50m      # Small CPU request to stay within quota
+            memory: 64Mi  # Small memory request
+          limits:
+            cpu: 100m
+            memory: 128Mi
+        ports:
+        - containerPort: 80
+EOF
+
+# Check how many pods actually get created vs requested
+kubectl get pods -n quota-demo -l app=pod-count-breaker
+kubectl get deployment pod-count-breaker -n quota-demo
+k get events  -n quota-demo
+
+# View final quota usage
 kubectl describe resourcequota compute-quota -n quota-demo
 ```
 
@@ -374,85 +443,12 @@ kubectl exec -it deployment/frontend-app -n frontend -- curl http://backend-serv
 kubectl exec -it deployment/backend-api -n backend -- curl http://backend-service:8080
 ```
 
-### 6. Network Policies for Namespace Isolation
-
-#### Apply Network Policies
-```bash
-# Create isolated namespace
-kubectl create namespace isolated
-
-# Deploy test application
-kubectl create deployment test-app --image=nicolaka/netshoot -n isolated -- sleep 3600
-
-# Apply network policy to deny all ingress traffic
-cat <<EOF | kubectl apply -f -
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: deny-all-ingress
-  namespace: isolated
-spec:
-  podSelector: {}
-  policyTypes:
-  - Ingress
-EOF
-
-# Test that the pod is now isolated
-kubectl exec -it deployment/frontend-app -n frontend -- curl --connect-timeout 5 http://$(kubectl get pod -n isolated -o jsonpath='{.items[0].status.podIP}'):8080
-
-# Apply policy to allow traffic from frontend namespace
-cat <<EOF | kubectl apply -f -
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-from-frontend
-  namespace: isolated
-spec:
-  podSelector: {}
-  policyTypes:
-  - Ingress
-  ingress:
-  - from:
-    - namespaceSelector:
-        matchLabels:
-          name: frontend
-EOF
-
-# Label the frontend namespace
-kubectl label namespace frontend name=frontend
-
-# Test that communication is now allowed
-kubectl exec -it deployment/frontend-app -n frontend -- curl --connect-timeout 5 http://$(kubectl get pod -n isolated -o jsonpath='{.items[0].status.podIP}'):8080
-```
-
-### 7. Namespace Management Best Practices
-
-#### Namespace Naming and Labeling
-```bash
-# Create namespaces with meaningful names and labels
-kubectl create namespace production-web --dry-run=client -o yaml | \
-kubectl annotate --local -f - \
-  description="Production web applications" \
-  owner="web-team" \
-  environment="production" \
-  -o yaml | kubectl apply -f -
-
-kubectl create namespace staging-api --dry-run=client -o yaml | \
-kubectl label --local -f - \
-  env=staging \
-  team=api \
-  tier=backend \
-  -o yaml | kubectl apply -f -
-
-# View namespaces with labels and annotations
-kubectl get namespace --show-labels
-kubectl describe namespace production-web
-```
 
 #### Monitor Namespace Resource Usage
 ```bash
 # Install metrics server if not already available (AKS usually has it)
 # kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+# AKS installs metrics server by default
 
 # View resource usage by namespace
 kubectl top pods --all-namespaces
@@ -465,120 +461,8 @@ kubectl top pods -n demo-app
 kubectl get resourcequota --all-namespaces
 ```
 
-### 8. Multi-Environment Setup Demo
 
-#### Create Environment-Based Namespaces
-```bash
-# Create environment namespaces
-environments=("dev" "test" "staging" "prod")
-
-for env in "${environments[@]}"; do
-  kubectl create namespace $env
-  kubectl label namespace $env environment=$env
-  
-  # Apply appropriate resource quotas based on environment
-  if [ "$env" = "prod" ]; then
-    cpu_limit="8"
-    memory_limit="16Gi"
-    pod_limit="50"
-  elif [ "$env" = "staging" ]; then
-    cpu_limit="4"
-    memory_limit="8Gi"
-    pod_limit="20"
-  else
-    cpu_limit="2"
-    memory_limit="4Gi"
-    pod_limit="10"
-  fi
-  
-  cat <<EOF | kubectl apply -f -
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: ${env}-quota
-  namespace: ${env}
-spec:
-  hard:
-    requests.cpu: "${cpu_limit}"
-    requests.memory: ${memory_limit}
-    pods: "${pod_limit}"
-EOF
-done
-
-# View created namespaces
-kubectl get namespace -l environment
-```
-
-#### Deploy Applications to Multiple Environments
-```bash
-# Function to deploy app to environment
-deploy_to_env() {
-  local env=$1
-  local replicas=$2
-  
-  cat <<EOF | kubectl apply -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: webapp
-  namespace: ${env}
-  labels:
-    app: webapp
-    environment: ${env}
-spec:
-  replicas: ${replicas}
-  selector:
-    matchLabels:
-      app: webapp
-  template:
-    metadata:
-      labels:
-        app: webapp
-        environment: ${env}
-    spec:
-      containers:
-      - name: webapp
-        image: nginx:latest
-        resources:
-          requests:
-            cpu: 100m
-            memory: 128Mi
-          limits:
-            cpu: 200m
-            memory: 256Mi
-        env:
-        - name: ENVIRONMENT
-          value: ${env}
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: webapp-service
-  namespace: ${env}
-spec:
-  selector:
-    app: webapp
-  ports:
-  - port: 80
-    targetPort: 80
-  type: ClusterIP
-EOF
-}
-
-# Deploy to each environment with different replica counts
-deploy_to_env "dev" 1
-deploy_to_env "test" 1  
-deploy_to_env "staging" 2
-deploy_to_env "prod" 3
-
-# View deployments across environments
-kubectl get deployments --all-namespaces -l app=webapp
-kubectl get pods --all-namespaces -l app=webapp
-```
-
-### 9. Namespace Cleanup and Management
+### Namespace Cleanup and Management
 
 #### Clean Up Resources
 ```bash

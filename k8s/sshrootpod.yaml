@@ -2,8 +2,8 @@ apiVersion: v1
 kind: Pod
 metadata:
   labels:
-    run: nsenter-test2
-  name: nsenter-test2
+    run: nsenter-test
+  name: nsenter-test
   namespace: default
 spec:
   containers:
@@ -33,7 +33,7 @@ spec:
   hostIPC: true
   hostNetwork: true
   hostPID: true
-  nodeName: aks-nodepool1-33762858-vmss000007
+  nodeName: aks-nodepool1-13858355-vmss000000
   preemptionPolicy: PreemptLowerPriority
   priority: 0
   restartPolicy: Never
