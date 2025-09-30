@@ -132,6 +132,15 @@ kubectl get events
 # Get events sorted by timestamp
 kubectl get events --sort-by='.metadata.creationTimestamp'
 
+# events - ttl
+k create ns testns
+kubectl create deployment nginx-demo --image=nginx -n testns
+k get events -n testns
+k get events 
+k delete deploy nginx-demo -n testns
+k get events -n testns
+k get events 
+
 # Check resource usage
 kubectl top nodes
 kubectl top pods
