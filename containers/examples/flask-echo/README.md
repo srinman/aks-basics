@@ -107,7 +107,7 @@ CMD ["python", "app.py"]
 
 ## Building the Container Image
 
-### Using Azure Container Registry (Recommended)
+### Option 1: Using Azure Container Registry (Recommended)
 
 Since local Docker may not be available, use Azure Container Registry to build:
 
@@ -124,6 +124,31 @@ az acr build \
   --image ${IMAGE_NAME}:latest \
   --file Dockerfile \
   .
+```
+
+### Option 2: Using Docker VM (Local-like Experience)
+
+For hands-on learning with Docker commands, set up a Docker VM:
+
+```bash
+# Follow the Docker VM setup guide first:
+# See: ../../docker-vm-setup.md
+
+# Connect to Docker VM
+docker-vm
+
+# Clone repository or copy files
+cd ~/containers
+git clone <your-repo> && cd <repo>/containers/examples/flask-echo
+
+# Build locally on VM
+docker build -t flask-echo:v1.0.0 -t flask-echo:latest .
+
+# Run on VM
+docker run -d -p 8080:8080 flask-echo:latest
+
+# Test
+curl http://localhost:8080/
 ```
 
 ### Build with Custom Arguments

@@ -25,10 +25,13 @@ Deep dive into Dockerfile syntax, best practices, and creating efficient contain
 ### 3. [Running Containers Locally](running-containers.md)
 Learn how to run containers on your local machine, manage container lifecycle, and work with multiple containers.
 
-### 4. [Azure Container Registry (ACR)](acr-guide.md)
+### 4. [Docker VM Setup with Azure Bastion](docker-vm-setup.md)
+Set up a cloud-based Docker environment using Azure VM and Bastion for hands-on learning without local Docker installation.
+
+### 5. [Azure Container Registry (ACR)](acr-guide.md)
 Understand ACR's role in storing OCI-compliant images and how to use `az acr build` for building images remotely.
 
-### 5. [Multi-Container Scenarios](multi-container.md)
+### 6. [Multi-Container Scenarios](multi-container.md)
 Learn to work with multiple containers and understand inter-container communication.
 
 ## Practical Examples
@@ -53,6 +56,7 @@ Location: `examples/fastapi-echo/`
 - Azure CLI installed (`az`)
 - Azure subscription (for ACR examples)
 - Docker Desktop installed (optional, for local testing)
+  - **Alternative**: Follow the [Docker VM Setup guide](docker-vm-setup.md) to create a cloud-based Docker environment
 
 ## Getting Started
 

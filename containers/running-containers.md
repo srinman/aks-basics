@@ -16,7 +16,25 @@ docker --version
 docker ps
 ```
 
-### Option 2: Azure Container Instances (Cloud-based)
+### Option 2: Docker VM with Azure Bastion (Recommended for Learning)
+
+**Don't have Docker locally? No problem!** Set up a cloud-based Docker environment in minutes:
+
+- Follow the [Docker VM Setup guide](docker-vm-setup.md) to create an Azure VM with Docker pre-installed
+- Connect securely via Azure Bastion (no public IP needed)
+- Get a full Docker environment without local installation
+- Estimated cost: ~$50/month (can stop when not in use)
+
+```bash
+# Quick setup (see guide for details)
+az vm create --resource-group rg-docker-vm --name docker-vm --image Ubuntu2204 --custom-data docker-cloud-init.yaml
+az network bastion create --name docker-bastion --resource-group rg-docker-vm --sku Developer
+
+# Connect to your Docker VM
+docker-vm  # (using alias from setup guide)
+```
+
+### Option 3: Azure Container Instances (Cloud-based)
 
 If local Docker is not available, use Azure Container Instances (ACI):
 

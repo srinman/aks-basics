@@ -137,7 +137,7 @@ CMD ["python", "app.py"]
 
 ## Building the Container Image
 
-### Using Azure Container Registry
+### Option 1: Using Azure Container Registry
 
 ```bash
 # Set variables
@@ -152,6 +152,32 @@ az acr build \
   --image ${IMAGE_NAME}:latest \
   --file Dockerfile \
   .
+```
+
+### Option 2: Using Docker VM
+
+For hands-on learning and testing multi-stage builds:
+
+```bash
+# Connect to Docker VM (see ../../docker-vm-setup.md)
+docker-vm
+
+# Clone or copy files
+cd ~/containers
+git clone <your-repo> && cd <repo>/containers/examples/fastapi-echo
+
+# Build multi-stage image on VM
+docker build -t fastapi-echo:v1.0.0 -t fastapi-echo:latest .
+
+# Verify multi-stage build worked (smaller final image)
+docker images fastapi-echo
+
+# Run on VM
+docker run -d -p 8080:8080 fastapi-echo:latest
+
+# Test
+curl http://localhost:8080/
+curl http://localhost:8080/docs  # API documentation
 ```
 
 ### Compare Image Sizes

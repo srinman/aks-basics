@@ -516,6 +516,8 @@ az acr replication delete \
 
 ### Pull Image to Local Docker
 
+**Option 1: Local Docker Desktop**
+
 ```bash
 # Login to ACR
 az acr login --name $REGISTRY_NAME
@@ -528,6 +530,26 @@ docker run -d \
   --name flask-echo \
   -p 8080:8080 \
   ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
+```
+
+**Option 2: Docker VM (No Local Docker Needed)**
+
+If you don't have Docker installed locally, use a Docker VM:
+
+```bash
+# Connect to Docker VM (see docker-vm-setup.md for setup)
+docker-vm
+
+# Login to ACR from VM
+az login
+az acr login --name $REGISTRY_NAME
+
+# Pull and run image
+docker pull ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
+docker run -d --name flask-echo -p 8080:8080 ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
+
+# Test from within VM
+curl http://localhost:8080/
 ```
 
 ### Deploy to Azure Container Instances
