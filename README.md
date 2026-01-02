@@ -15,6 +15,22 @@ Learn how to create, configure, and manage AKS clusters in Azure. This section c
 
 ---
 
+### 📦 [Containers & Docker](./containers/README.md)
+
+**Focus**: Container fundamentals, Docker, and Azure Container Registry
+
+Build and manage container images using Docker and Azure Container Registry (ACR). This section covers containerization basics, building images without local Docker, pushing to ACR, and deploying to Azure Container Instances (ACI).
+
+**Key Topics**:
+- Container basics and Docker fundamentals
+- Building images with `az acr build` (no local Docker needed)
+- Azure Container Registry (ACR) setup and management
+- Deploying to Azure Container Instances (ACI)
+- Docker VM setup for hands-on practice
+- Dockerfile best practices and multi-stage builds
+
+---
+
 ### ⚙️ [Kubernetes Fundamentals](./k8s/README.md)
 
 **Focus**: Core Kubernetes concepts and operations
@@ -27,14 +43,16 @@ Master the fundamental concepts of Kubernetes through practical examples and han
 ## 🎯 Learning Path Recommendations
 
 ### For Complete Beginners:
-1. Start with **[Kubernetes Fundamentals](./k8s/README.md)** to understand core concepts
-2. Practice with basic kubectl commands and resource creation
-3. Move to **[AKS](./aks/README.md)** for cloud-specific implementations
+1. Start with **[Containers & Docker](./containers/README.md)** to understand containerization
+2. Learn **[Kubernetes Fundamentals](./k8s/README.md)** to understand core concepts
+3. Practice with basic kubectl commands and resource creation
+4. Move to **[AKS](./aks/README.md)** for cloud-specific implementations
 
 ### For Azure Professionals:
-1. Begin with **[AKS](./aks/README.md)** to understand Azure integrations
-2. Supplement with **[Kubernetes Fundamentals](./k8s/README.md)** for deeper technical knowledge
-3. Focus on production-ready patterns and best practices
+1. Review **[Containers & Docker](./containers/README.md)** for ACR and ACI basics
+2. Begin with **[AKS](./aks/README.md)** to understand Azure integrations
+3. Supplement with **[Kubernetes Fundamentals](./k8s/README.md)** for deeper technical knowledge
+4. Focus on production-ready patterns and best practices
 
 
 ---
