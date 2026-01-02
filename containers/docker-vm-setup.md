@@ -64,7 +64,7 @@ Use this automated script for fastest setup:
 
 # Set variables
 RESOURCE_GROUP="rg-docker-vm"
-LOCATION="eastus"
+LOCATION="westus"
 VM_NAME="docker-vm"
 VNET_NAME="docker-vnet"
 SUBNET_NAME="docker-subnet"
@@ -268,21 +268,46 @@ az network bastion create \
 
 ### Step 5: Connect to VM
 
+**Note**: Developer SKU Bastion only supports Azure Portal connections. CLI commands (`az network bastion ssh` and `az network bastion tunnel`) require Standard or Premium SKU.
+
+#### Method 1: Azure Portal (Works with Developer SKU)
+
+1. Open [Azure Portal](https://portal.azure.com)
+2. Navigate to your resource group: `rg-docker-vm`
+3. Select the VM: `docker-vm`
+4. Click **Connect** → **Connect via Bastion**
+5. Enter username: `dockeradmin`
+6. Select **SSH Private Key from Local File**
+7. Upload your SSH key: `~/.ssh/id_rsa`
+8. Click **Connect**
+
+A new browser tab will open with an SSH session to your VM.
+
+#### Method 2: Azure CLI (Requires Standard SKU - $140/month)
+
+If you need CLI access and are willing to upgrade:
+
 ```bash
-# Get VM resource ID
+# Upgrade Bastion to Standard SKU (additional cost)
+az network bastion update \
+  --name docker-bastion \
+  --resource-group rg-docker-vm \
+  --sku Standard \
+  --enable-tunneling true
+
+# Then connect via CLI
 VM_ID=$(az vm show \
-  --resource-group $RESOURCE_GROUP \
-  --name $VM_NAME \
+  --resource-group rg-docker-vm \
+  --name docker-vm \
   --query id \
   --output tsv)
 
-# Connect via Bastion
 az network bastion ssh \
-  --name $BASTION_NAME \
-  --resource-group $RESOURCE_GROUP \
+  --name docker-bastion \
+  --resource-group rg-docker-vm \
   --target-resource-id $VM_ID \
   --auth-type ssh-key \
-  --username $ADMIN_USERNAME \
+  --username dockeradmin \
   --ssh-key ~/.ssh/id_rsa
 ```
 
@@ -310,12 +335,28 @@ docker info
 groups
 ```
 
-## Creating a Connection Alias
+## Quick Access Methods
 
-For easier access, create an alias:
+### Portal Bookmark (Developer SKU)
+
+With Developer SKU, save this URL as a bookmark for quick access:
+
+```
+https://portal.azure.com/#view/Microsoft_Azure_BastionHost/BastionHostConnectionBlade/resourceId/%2Fsubscriptions%2F{subscription-id}%2FresourceGroups%2Frg-docker-vm%2Fproviders%2FMicrosoft.Compute%2FvirtualMachines%2Fdocker-vm
+```
+
+Replace `{subscription-id}` with your Azure subscription ID:
 
 ```bash
-# Add to your ~/.bashrc or ~/.zshrc
+az account show --query id -o tsv
+```
+
+### CLI Alias (Standard SKU Only)
+
+If you upgrade to Standard SKU, create a CLI alias:
+
+```bash
+# Only works with Standard SKU!
 alias docker-vm='az network bastion ssh \
   --name docker-bastion \
   --resource-group rg-docker-vm \
@@ -323,12 +364,6 @@ alias docker-vm='az network bastion ssh \
   --auth-type ssh-key \
   --username dockeradmin \
   --ssh-key ~/.ssh/id_rsa'
-
-# Reload shell configuration
-source ~/.bashrc  # or source ~/.zshrc
-
-# Now connect with just:
-docker-vm
 ```
 
 ## Using the Docker VM
@@ -373,10 +408,12 @@ docker push ${REGISTRY_NAME}.azurecr.io/flask-echo:v1.0.0
 
 ### Transfer Files to VM
 
-#### Using SCP via Bastion Tunnel
+#### Using SCP via Bastion Tunnel (Standard SKU Only)
+
+**Note**: This requires Standard SKU ($140/month). Not available with Developer SKU.
 
 ```bash
-# Create SSH tunnel (from local machine)
+# Requires Standard SKU with tunneling enabled
 az network bastion tunnel \
   --name docker-bastion \
   --resource-group rg-docker-vm \
@@ -388,7 +425,7 @@ az network bastion tunnel \
 scp -P 50022 -r ./flask-echo dockeradmin@localhost:~/containers/
 ```
 
-#### Using Git (Recommended)
+#### Using Git (Recommended for Developer SKU)
 
 ```bash
 # Connect to VM
@@ -416,10 +453,11 @@ docker run -d -p 8080:8080 flask-echo:latest
 
 ### Bastion Costs
 
-| SKU | Features | Cost/Hour | Cost/Month (24/7) |
-|-----|----------|-----------|-------------------|
-| Developer | SSH only, 2 connections | ~$0.027 | ~$20 |
-| Basic | SSH + RDP, 50 connections | ~$0.19 | ~$140 |
+| SKU | Features | CLI Support | Cost/Hour | Cost/Month (24/7) |
+|-----|----------|-------------|-----------|-------------------|
+| Developer | SSH via Portal only, 2 connections | ❌ No | ~$0.027 | ~$20 |
+| Standard | SSH + RDP, tunneling, 50 connections | ✅ Yes | ~$0.19 | ~$140 |
+| Premium | All Standard + more scale | ✅ Yes | ~$0.40 | ~$288 |
 
 ### Cost Optimization
 
@@ -482,30 +520,51 @@ esac
 
 ### Cannot Connect via Bastion
 
+#### Error: "SKU must be Standard or Premium"
+
+This means you're trying to use CLI commands with Developer SKU:
+
 ```bash
-# Check Bastion status
+# Check your Bastion SKU
 az network bastion show \
   --name docker-bastion \
   --resource-group rg-docker-vm \
-  --query provisioningState
+  --query '{sku:sku.name}' -o table
+
+# If SKU is "Developer", use Azure Portal to connect
+# Or upgrade to Standard:
+az network bastion update \
+  --name docker-bastion \
+  --resource-group rg-docker-vm \
+  --sku Standard \
+  --enable-tunneling true
+```
+
+#### Check Bastion and VM Status
+
+```bash
+# Check Bastion provisioning status
+az network bastion show \
+  --name docker-bastion \
+  --resource-group rg-docker-vm \
+  --query '{name:name,state:provisioningState,sku:sku.name}' -o table
 
 # Check VM is running
 az vm get-instance-view \
   --resource-group rg-docker-vm \
   --name docker-vm \
-  --query instanceView.statuses[1].displayStatus
+  --query '{name:name,powerState:instanceView.statuses[1].displayStatus}' -o table
 
-# Verify SSH key
+# Verify SSH key exists
 ls -la ~/.ssh/id_rsa
-
-# Test with password auth instead
-az network bastion ssh \
-  --name docker-bastion \
-  --resource-group rg-docker-vm \
-  --target-resource-id $VM_ID \
-  --auth-type password \
-  --username dockeradmin
 ```
+
+#### Portal Connection Issues
+
+- Ensure pop-ups are allowed for portal.azure.com
+- Try a different browser (Chrome/Edge work best)
+- Clear browser cache and cookies
+- Check that VM is in "Running" state
 
 ### Docker Not Installed
 

@@ -27,30 +27,17 @@ Azure Container Registry (ACR) is a managed Docker registry service for storing 
 
 ## ACR Service Tiers
 
-Azure Container Registry offers three service tiers:
+**For Learning**: This guide uses the **Basic** tier, which is perfect for learning and development.
 
-### Basic
+### Basic (Used in This Guide)
 - **Use Case**: Development and learning
 - **Storage**: 10 GB included
 - **Webhooks**: 2
-- **Geo-replication**: ❌
-- **Best For**: Small projects, learning
+- **Cost**: ~$5/month
+- **Best For**: Learning, small projects, development
 
-### Standard
-- **Use Case**: Production workloads
-- **Storage**: 100 GB included
-- **Webhooks**: 10
-- **Geo-replication**: ❌
-- **Best For**: Most production scenarios
-
-### Premium
-- **Use Case**: High-scale production
-- **Storage**: 500 GB included
-- **Webhooks**: 500
-- **Geo-replication**: ✅
-- **Content Trust**: ✅
-- **Private Link**: ✅
-- **Best For**: Enterprise, multi-region deployments
+### Standard & Premium
+For production workloads, Azure offers Standard (~$20/month, 100GB storage) and Premium (~$500/month, geo-replication, private endpoints) tiers. For learning purposes, Basic tier is sufficient.
 
 ## Creating an ACR
 
@@ -67,24 +54,15 @@ az group create \
   --name $RESOURCE_GROUP \
   --location $LOCATION
 
-# Create ACR (Basic tier)
-az acr create \
-  --resource-group $RESOURCE_GROUP \
-  --name $REGISTRY_NAME \
-  --sku Basic
-
-# Create ACR (Standard tier - recommended for production)
-az acr create \
-  --resource-group $RESOURCE_GROUP \
-  --name $REGISTRY_NAME \
-  --sku Standard
-
-# Create ACR with admin enabled (for learning - not for production)
+# Create ACR (Basic tier for learning)
 az acr create \
   --resource-group $RESOURCE_GROUP \
   --name $REGISTRY_NAME \
   --sku Basic \
   --admin-enabled true
+
+# Note: --admin-enabled true simplifies authentication for learning
+# In production, use managed identities or service principals instead
 ```
 
 ### Verify ACR Creation
@@ -107,72 +85,25 @@ az acr list --output table
 
 ## Authentication with ACR
 
-### Method 1: Azure CLI (Recommended for Development)
+For building images with `az acr build`, authentication is automatic when you're logged into Azure CLI. No additional login required!
 
 ```bash
-# Login to ACR
-az acr login --name $REGISTRY_NAME
+# Verify you're logged in to Azure
+az account show
 
-# This command:
-# 1. Gets an Azure AD token
-# 2. Exchanges it for a Docker token
-# 3. Logs Docker into the registry
-# Valid for 3 hours
+# If not logged in
+az login
+
+# That's it! You can now use az acr build
 ```
 
-### Method 2: Admin Account (Not Recommended for Production)
+For pulling images with Azure Container Instances (ACI), we'll use admin credentials that were enabled during ACR creation.
 
 ```bash
-# Enable admin account
-az acr update \
-  --name $REGISTRY_NAME \
-  --admin-enabled true
+# Get ACR credentials (needed for ACI)
+az acr credential show --name $REGISTRY_NAME
 
-# Get credentials
-az acr credential show \
-  --name $REGISTRY_NAME
-
-# Use credentials
-docker login ${REGISTRY_NAME}.azurecr.io \
-  --username <username> \
-  --password <password>
-```
-
-### Method 3: Service Principal (Recommended for Production)
-
-```bash
-# Create service principal
-SP_NAME="acr-service-principal"
-ACR_REGISTRY_ID=$(az acr show --name $REGISTRY_NAME --query id --output tsv)
-
-SP_PASSWD=$(az ad sp create-for-rbac \
-  --name $SP_NAME \
-  --scopes $ACR_REGISTRY_ID \
-  --role acrpull \
-  --query password \
-  --output tsv)
-
-SP_APP_ID=$(az ad sp list \
-  --display-name $SP_NAME \
-  --query [].appId \
-  --output tsv)
-
-# Login with service principal
-docker login ${REGISTRY_NAME}.azurecr.io \
-  --username $SP_APP_ID \
-  --password $SP_PASSWD
-```
-
-### Method 4: Managed Identity (Best for Azure Services)
-
-```bash
-# Attach identity to AKS cluster
-az aks update \
-  --name myAKSCluster \
-  --resource-group $RESOURCE_GROUP \
-  --attach-acr $REGISTRY_NAME
-
-# No credentials needed - AKS automatically authenticates
+# These credentials will be used when deploying to ACI
 ```
 
 ## Building Images with az acr build
@@ -191,24 +122,24 @@ The `az acr build` command builds container images in Azure without requiring lo
 ### Basic Build
 
 ```bash
-# Build from current directory
+# Build from specific directory (recommended)
 az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v1.0.0 \
-  .
+  ./containers/examples/flask-echo
 
 # Build with specific Dockerfile
 az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v1.0.0 \
-  --file Dockerfile \
-  .
+  --file ./containers/examples/flask-echo/Dockerfile \
+  ./containers/examples/flask-echo
 
-# Build from specific directory
+# Build from current directory (if you're already in the app folder)
 az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v1.0.0 \
-  ./containers/examples/flask-echo
+  .
 ```
 
 ### Build with Multiple Tags
@@ -220,10 +151,10 @@ az acr build \
   --image flask-echo:v1.0.0 \
   --image flask-echo:latest \
   --image flask-echo:stable \
-  .
+  ./containers/examples/flask-echo
 ```
 
-### Build with Arguments
+### Build with Arguments - optional
 
 ```bash
 # Pass build arguments
@@ -232,10 +163,10 @@ az acr build \
   --image flask-echo:v1.0.0 \
   --build-arg PYTHON_VERSION=3.10 \
   --build-arg APP_ENV=production \
-  .
+  ./containers/examples/flask-echo
 ```
 
-### Build from Git Repository
+### Build from Git Repository - optional
 
 ```bash
 # Build from GitHub
@@ -257,7 +188,7 @@ az acr build \
   https://github.com/yourusername/yourrepo.git#main:containers/flask-echo
 ```
 
-### Build with Platform Specification
+### Build with Platform Specification  - optional
 
 ```bash
 # Build for specific platform
@@ -265,14 +196,14 @@ az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v1.0.0 \
   --platform linux/amd64 \
-  .
+  ./containers/examples/flask-echo
 
 # Build multi-platform image
 az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v1.0.0 \
   --platform linux/amd64,linux/arm64 \
-  .
+  ./containers/examples/flask-echo
 ```
 
 ## Building the Echo Applications
@@ -280,39 +211,34 @@ az acr build \
 ### Build Flask Echo App
 
 ```bash
-# Navigate to Flask app directory
-cd containers/examples/flask-echo
-
-# Build and push to ACR
+# Build and push to ACR (run from project root)
 az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v1.0.0 \
   --image flask-echo:latest \
-  .
+  ./containers/examples/flask-echo
 
 # Build with custom version
 az acr build \
   --registry $REGISTRY_NAME \
   --image flask-echo:v2.0.0 \
   --build-arg APP_VERSION=2.0.0 \
-  .
+  ./containers/examples/flask-echo
 
 # View build logs
 az acr task logs --registry $REGISTRY_NAME
 ```
 
+
 ### Build FastAPI Echo App
 
 ```bash
-# Navigate to FastAPI app directory
-cd containers/examples/fastapi-echo
-
-# Build multi-stage image
+# Build multi-stage image (run from project root)
 az acr build \
   --registry $REGISTRY_NAME \
   --image fastapi-echo:v1.0.0 \
   --image fastapi-echo:latest \
-  .
+  ./containers/examples/fastapi-echo
 
 # Check build output for stage information
 # You'll see:
@@ -320,26 +246,7 @@ az acr build \
 # - Stage 2: runtime (final image)
 ```
 
-### Build Both Apps at Once
 
-```bash
-# Build Flask app
-az acr build \
-  --registry $REGISTRY_NAME \
-  --image flask-echo:latest \
-  ./containers/examples/flask-echo &
-
-# Build FastAPI app (in parallel)
-az acr build \
-  --registry $REGISTRY_NAME \
-  --image fastapi-echo:latest \
-  ./containers/examples/fastapi-echo &
-
-# Wait for both to complete
-wait
-
-echo "Both images built successfully!"
-```
 
 ## Managing Images in ACR
 
@@ -393,166 +300,9 @@ az acr repository show \
   --output tsv
 ```
 
-### Delete Images
+## Deploy to Azure Container Instances
 
-```bash
-# Delete specific tag
-az acr repository delete \
-  --name $REGISTRY_NAME \
-  --image flask-echo:v1.0.0 \
-  --yes
-
-# Delete all tags in repository
-az acr repository delete \
-  --name $REGISTRY_NAME \
-  --repository flask-echo \
-  --yes
-
-# Delete untagged manifests
-az acr repository show-manifests \
-  --name $REGISTRY_NAME \
-  --repository flask-echo \
-  --query "[?tags[0]==null].digest" \
-  --output tsv | \
-  xargs -I {} az acr repository delete \
-    --name $REGISTRY_NAME \
-    --image flask-echo@{} \
-    --yes
-```
-
-## ACR Tasks (Advanced)
-
-ACR Tasks enable automated builds triggered by events.
-
-### Create a Build Task
-
-```bash
-# Create task that builds on git commit
-az acr task create \
-  --name build-flask-echo \
-  --registry $REGISTRY_NAME \
-  --context https://github.com/yourusername/yourrepo.git \
-  --file Dockerfile \
-  --image flask-echo:{{.Run.ID}} \
-  --git-access-token <PAT>
-
-# Run task manually
-az acr task run \
-  --name build-flask-echo \
-  --registry $REGISTRY_NAME
-
-# List tasks
-az acr task list \
-  --registry $REGISTRY_NAME \
-  --output table
-
-# View task runs
-az acr task list-runs \
-  --registry $REGISTRY_NAME \
-  --output table
-```
-
-### Quick Task (One-time Build)
-
-```bash
-# Quick build without creating a task
-az acr build \
-  --registry $REGISTRY_NAME \
-  --image flask-echo:{{.Run.ID}} \
-  https://github.com/yourusername/yourrepo.git
-```
-
-## Image Scanning and Security
-
-### Azure Defender for Container Registries
-
-```bash
-# Enable Azure Defender (requires Premium tier)
-az security pricing create \
-  --name ContainerRegistry \
-  --tier Standard
-
-# View vulnerability assessment results
-az security assessment list \
-  --query "[?id contains(@, 'containerRegistry')]"
-```
-
-### Manually Scan Images
-
-```bash
-# Use Trivy for scanning
-docker run --rm \
-  -v /var/run/docker.sock:/var/run/docker.sock \
-  aquasec/trivy image \
-  ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
-```
-
-## Geo-Replication (Premium Tier Only)
-
-```bash
-# Create Premium registry
-az acr create \
-  --resource-group $RESOURCE_GROUP \
-  --name $REGISTRY_NAME \
-  --sku Premium
-
-# Replicate to another region
-az acr replication create \
-  --registry $REGISTRY_NAME \
-  --location westeurope
-
-# List replications
-az acr replication list \
-  --registry $REGISTRY_NAME \
-  --output table
-
-# Delete replication
-az acr replication delete \
-  --registry $REGISTRY_NAME \
-  --name westeurope
-```
-
-## Integration Examples
-
-### Pull Image to Local Docker
-
-**Option 1: Local Docker Desktop**
-
-```bash
-# Login to ACR
-az acr login --name $REGISTRY_NAME
-
-# Pull image
-docker pull ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
-
-# Run locally
-docker run -d \
-  --name flask-echo \
-  -p 8080:8080 \
-  ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
-```
-
-**Option 2: Docker VM (No Local Docker Needed)**
-
-If you don't have Docker installed locally, use a Docker VM:
-
-```bash
-# Connect to Docker VM (see docker-vm-setup.md for setup)
-docker-vm
-
-# Login to ACR from VM
-az login
-az acr login --name $REGISTRY_NAME
-
-# Pull and run image
-docker pull ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
-docker run -d --name flask-echo -p 8080:8080 ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
-
-# Test from within VM
-curl http://localhost:8080/
-```
-
-### Deploy to Azure Container Instances
+Azure Container Instances (ACI) is the easiest way to run your ACR images in the cloud without managing VMs or clusters.
 
 ```bash
 # Get ACR credentials
@@ -566,66 +316,94 @@ az container create \
   --image ${REGISTRY_NAME}.azurecr.io/flask-echo:latest \
   --dns-name-label flask-echo-${RANDOM} \
   --ports 8080 \
+  --os-type Linux \
+  --cpu 1 \
+  --memory 1 \
   --registry-login-server ${REGISTRY_NAME}.azurecr.io \
   --registry-username $ACR_USERNAME \
   --registry-password $ACR_PASSWORD
 
-# Get FQDN
-az container show \
+# Get FQDN and test
+FQDN=$(az container show \
   --resource-group $RESOURCE_GROUP \
   --name flask-echo \
   --query ipAddress.fqdn \
-  --output tsv
+  --output tsv)
+
+echo "Application URL: http://${FQDN}:8080"
+
+# Test the application
+curl http://${FQDN}:8080/
+
+# View container logs
+az container logs \
+  --resource-group $RESOURCE_GROUP \
+  --name flask-echo
+
+# Check container status
+az container show \
+  --resource-group $RESOURCE_GROUP \
+  --name flask-echo \
+  --query '{Name:name,State:containers[0].instanceView.currentState.state,IP:ipAddress.ip}' \
+  --output table
 ```
 
-### Deploy to Azure Kubernetes Service
+### Deploy FastAPI App to ACI
 
 ```bash
-# Create AKS cluster
-az aks create \
+# Get ACR credentials
+ACR_USERNAME=$(az acr credential show --name $REGISTRY_NAME --query username -o tsv)
+ACR_PASSWORD=$(az acr credential show --name $REGISTRY_NAME --query passwords[0].value -o tsv)
+
+# Deploy FastAPI app
+az container create \
   --resource-group $RESOURCE_GROUP \
-  --name myAKSCluster \
-  --node-count 2 \
-  --generate-ssh-keys \
-  --attach-acr $REGISTRY_NAME
+  --name fastapi-echo \
+  --image ${REGISTRY_NAME}.azurecr.io/fastapi-echo:latest \
+  --dns-name-label fastapi-echo-${RANDOM} \
+  --ports 8080 \
+  --os-type Linux \
+  --cpu 1 \
+  --memory 1 \
+  --registry-login-server ${REGISTRY_NAME}.azurecr.io \
+  --registry-username $ACR_USERNAME \
+  --registry-password $ACR_PASSWORD
 
-# Get credentials
-az aks get-credentials \
+# Get URL and test
+FQDN=$(az container show \
   --resource-group $RESOURCE_GROUP \
-  --name myAKSCluster
+  --name fastapi-echo \
+  --query ipAddress.fqdn \
+  --output tsv)
 
-# Deploy to AKS
-kubectl run flask-echo \
-  --image=${REGISTRY_NAME}.azurecr.io/flask-echo:latest \
-  --port=8080
-
-# Expose as service
-kubectl expose pod flask-echo \
-  --type=LoadBalancer \
-  --port=80 \
-  --target-port=8080
+echo "FastAPI URL: http://${FQDN}:8080"
+echo "API Docs: http://${FQDN}:8080/docs"
+curl http://${FQDN}:8080/
 ```
 
-## Best Practices
+## Best Practices for Learning
 
 ### 1. Tagging Strategy
 
 ```bash
-# ✅ Good: Semantic versioning + latest
+# ✅ Good: Use version tags
 az acr build \
-  --image flask-echo:1.2.3 \
-  --image flask-echo:1.2 \
-  --image flask-echo:1 \
+  --registry $REGISTRY_NAME \
+  --image flask-echo:v1.0.0 \
   --image flask-echo:latest \
-  ...
+  ./containers/examples/flask-echo
 
-# ✅ Good: Include git commit
+# ✅ Good: Tag by feature
 az acr build \
-  --image flask-echo:$(git rev-parse --short HEAD) \
-  ...
+  --registry $REGISTRY_NAME \
+  --image flask-echo:feature-logging \
+  ./containers/examples/flask-echo
 
-# ❌ Bad: Only using latest
-az acr build --image flask-echo:latest ...
+# ❌ Avoid: Only using latest (hard to track changes)
+az acr build \
+  --registry $REGISTRY_NAME \
+  --image flask-echo:latest \
+  ./containers/examples/flask-echo
 ```
 
 ### 2. Image Naming
@@ -634,66 +412,32 @@ az acr build --image flask-echo:latest ...
 # ✅ Good: Descriptive names
 flask-echo
 fastapi-echo
-api-gateway
-user-service
+web-frontend
+api-backend
 
-# ❌ Bad: Generic names
+# ❌ Avoid: Generic names
 app
-service
-container
+test
+my-container
 ```
 
-### 3. Build Context
+### 3. Clean Up Old Images
 
 ```bash
-# ✅ Good: Use .dockerignore
-cat > .dockerignore << EOF
-.git
-.venv
-__pycache__
-*.pyc
-EOF
+# List all images
+az acr repository list --name $REGISTRY_NAME --output table
 
-# ✅ Good: Specific context
-az acr build --image app:v1 ./src
+# Delete specific tag
+az acr repository delete \
+  --name $REGISTRY_NAME \
+  --image flask-echo:v1.0.0 \
+  --yes
 
-# ❌ Bad: Entire repo as context
-az acr build --image app:v1 .
-```
-
-### 4. Security
-
-```bash
-# ✅ Good: Use managed identity
-az aks update --attach-acr $REGISTRY_NAME
-
-# ✅ Good: Scan images
-az acr task create --name scan-on-push ...
-
-# ✅ Good: Use private networking (Premium)
-az acr private-endpoint-connection create ...
-
-# ❌ Bad: Enable admin account in production
-az acr update --admin-enabled true
-```
-
-### 5. Cost Optimization
-
-```bash
-# ✅ Good: Clean up old images
-az acr repository show-tags ... | \
-  tail -n +10 | \
-  xargs -I {} az acr repository delete ...
-
-# ✅ Good: Use retention policy (Premium)
-az acr config retention update \
-  --registry $REGISTRY_NAME \
-  --status enabled \
-  --days 30 \
-  --type UntaggedManifests
-
-# ✅ Good: Use Basic tier for dev/test
-az acr create --sku Basic ...
+# Delete entire repository
+az acr repository delete \
+  --name $REGISTRY_NAME \
+  --repository flask-echo \
+  --yes
 ```
 
 ## Troubleshooting
@@ -707,10 +451,10 @@ az acr task logs \
   --run-id <run-id>
 
 # Test build locally (if Docker available)
-docker build -t test .
+docker build -t test ./containers/examples/flask-echo
 
 # Check Dockerfile syntax
-cat Dockerfile
+cat ./containers/examples/flask-echo/Dockerfile
 ```
 
 ### Authentication Issues
@@ -771,7 +515,89 @@ az group delete \
 
 - Explore [multi-container scenarios](multi-container.md)
 - Deploy to [Azure Kubernetes Service](../aks/README.md)
-- Learn about [ACR Tasks automation](https://docs.microsoft.com/azure/container-registry/container-registry-tasks-overview)
+- Learn about [Docker fundamentals](container-basics.md)
+
+---
+
+## Appendix: Running Images Locally with Docker
+
+If you have Docker installed locally or on a VM, you can pull and run your ACR images:
+
+### Prerequisites
+
+- Docker Desktop installed, OR
+- Docker VM set up (see [docker-vm-setup.md](docker-vm-setup.md))
+
+### Pull and Run Locally
+
+```bash
+# Login to ACR (requires Docker installed)
+az acr login --name $REGISTRY_NAME
+
+# Pull image from ACR
+docker pull ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
+
+# Run the container
+docker run -d \
+  --name flask-echo \
+  -p 8080:8080 \
+  ${REGISTRY_NAME}.azurecr.io/flask-echo:latest
+
+# Test locally
+curl http://localhost:8080/
+
+# View logs
+docker logs flask-echo
+
+# Stop and remove
+docker stop flask-echo
+docker rm flask-echo
+```
+
+### Using Docker VM
+
+If you don't have Docker Desktop locally, use a Docker VM:
+
+```bash
+# 1. Set up Docker VM first (see docker-vm-setup.md)
+# 2. Connect to VM via Azure Portal
+
+# Once connected to the VM:
+az login
+az acr login --name <your-registry-name>
+
+# Pull and run
+docker pull <your-registry-name>.azurecr.io/flask-echo:latest
+docker run -d --name flask-echo -p 8080:8080 <your-registry-name>.azurecr.io/flask-echo:latest
+
+# Test from within VM
+curl http://localhost:8080/
+```
+
+### Compare: Local Docker vs ACI
+
+| Aspect | Local Docker | Azure Container Instances |
+|--------|--------------|---------------------------|
+| Setup | Requires Docker installed | No installation needed |
+| Access | localhost only | Public URL provided |
+| Cost | Free (uses local resources) | Pay per second of usage |
+| Best For | Development/testing | Demos, temporary workloads |
+| Limitations | Local machine only | Internet-accessible |
+
+### When to Use Each
+
+**Use Local Docker when:**
+- Developing and testing code changes
+- Running containers offline
+- Learning Docker commands
+- Need full control over networking
+
+**Use ACI when:**
+- Sharing a demo with others
+- Running temporary workloads
+- No local Docker installation
+- Need public internet access
+- Learning cloud deployments
 
 ## Additional Resources
 

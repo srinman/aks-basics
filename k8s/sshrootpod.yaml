@@ -33,7 +33,7 @@ spec:
   hostIPC: true
   hostNetwork: true
   hostPID: true
-  nodeName: aks-nodepool1-13858355-vmss000000
+  nodeName: aks-nodepool1-13858355-vmss000001
   preemptionPolicy: PreemptLowerPriority
   priority: 0
   restartPolicy: Never

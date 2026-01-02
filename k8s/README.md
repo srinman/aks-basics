@@ -8,6 +8,7 @@ Welcome to the comprehensive collection of Kubernetes learning guides for Azure 
 |-------|-------|-------------|
 | **[General Concepts](./general-concepts.md)** | Beginner | Kubernetes evolution and foundational concepts |
 | **[Pods](./pods.md)** | Beginner | Basic pod operations and debugging |
+| **[Sidecar Pattern](./sidecar.md)** | Intermediate | Multi-container pods with sidecar pattern |
 | **[Nodes](./nodes.md)** | Intermediate | Understanding worker nodes and components |
 | **[Namespaces](./namespace.md)** | Intermediate | Multi-tenancy and resource isolation |
 | **[Deployments](./deploymentdemo.md)** | Intermediate | Application deployments and scaling |

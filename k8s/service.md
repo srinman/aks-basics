@@ -309,6 +309,87 @@ spec:
 EOF
 ```
 
+### Exercise 4: Internal Load Balancer Service
+
+Create a deployment and internal load balancer service that's only accessible within the Azure VNet:
+
+```bash
+# Create nginx deployment with 3 replicas
+cat <<EOF | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-internal
+  labels:
+    app: nginx-internal
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-internal
+  template:
+    metadata:
+      labels:
+        app: nginx-internal
+        tier: frontend
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "250m"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+EOF
+
+# Create internal load balancer service
+cat <<EOF | kubectl apply -f -
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-internal-lb
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+spec:
+  type: LoadBalancer
+  selector:
+    app: nginx-internal
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+EOF
+
+# Check the deployment and service
+kubectl get deployments
+kubectl get pods -l app=nginx-internal
+kubectl get service nginx-internal-lb
+
+# Wait for internal IP assignment (may take a few minutes)
+kubectl get service nginx-internal-lb --watch
+
+# Test connectivity from within the cluster
+kubectl run test-pod --image=busybox --rm -it --restart=Never -- wget -qO- http://nginx-internal-lb
+
+# Check service endpoints
+kubectl get endpoints nginx-internal-lb
+
+# Describe the service to see the internal load balancer details
+kubectl describe service nginx-internal-lb
+```
+
+**Key Points about Internal Load Balancer:**
+- Uses annotation `service.beta.kubernetes.io/azure-load-balancer-internal: "true"`
+- Creates Azure Internal Load Balancer instead of public one
+- Accessible only from within the Azure VNet
+- Useful for internal services that shouldn't be exposed to internet
+- Load balances traffic across all 3 nginx replicas
+
 ## 🛠️ Troubleshooting Common Issues
 
 ### Issue 1: Service Not Reaching Pods
